@@ -1,49 +1,6 @@
 import datetime
 import re
 
-class ValidationError(Exception):
-	pass
-
-class Model:
-	# add try except so that when fewer arguments
-	# are passed to Model, it trows a ValidationError.
-	def __init__(self, first_name, last_name, email):
-		self.first_name.string = first_name
-		self.last_name.string = last_name
-		self.email.string = email
-
-
-	def validate(self):
-		self.first_name.validate()
-		self.last_name.validate()
-		self.email.validate()
-		self.is_verified.validate()
-		self.age.validate()
-
-
-class CharField:
-	string = None
-	def __init__(self, min_length = 0, max_length = None, blank = False, default = None):
-		self.min_length = min_length
-		self.max_length = max_length
-
-	def validate(self):
-		#include blank and default
-		if type(self.string) == str:
-			length = len(self.string)
-			mini = self.min_length
-			maxi = self.max_length
-			if not self.string.isalpha():
-				print(f"{self.string} must be of alphabetical type.\n")
-			elif (length < mini):
-				print(f"Length of {self.string} is too short! Minimum {mini} characters.\n")
-				raise ValidationError
-			elif (length > maxi):
-				print(f"Length of {self.string} is too long! Maximum {maxi} characters.\n")
-				raise ValidationError
-		else:
-			print(f"Type of name was not correct, {type(self.string)} must be of type str.\n")
-			raise ValidationError
 
 class EmailField:
 	string = None
@@ -96,13 +53,75 @@ class BooleanField:
 		else:
 			print(f"Type was not correct, {type(self.default)} must be of type bool")
 
+class ValidationError(Exception):
+	pass
+
+class Model:
+	# add try except so that when fewer arguments
+	# are passed to Model, it trows a ValidationError.
+	def __init__(self, first_name, last_name, email):
+		self.first_name = first_name
+		self.last_name = last_name
+		self.email = email
+
+	@property
+	def first_name(self):
+		return self.first_name
+
+
+
+	# @property
+	# def age(self):
+	# 	print(self.age.blank)
+	# 	if self.age.blank:
+	# 		return None
+	# 	return self.number
+
+	# @age.setter
+	# def age(self, number):
+	# 	self.number = number
+
+	# def validate(self):
+	# 	self.first_name.validate()
+	# 	self.last_name.validate()
+	# 	self.email.validate()
+		# self.is_verified.validate()
+		# self.age.validate()
+
+class CharField:
+	def __init__(self, min_length = 0, max_length = None, blank = False, default = None):
+		self.min_length = min_length
+		self.max_length = max_length
+
+	def isdjaids(self):
+		print(12312)
+	# def validate(self):
+	# 	#include blank and default
+	# 	if type(self.string) == str:
+	# 		length = len(self.string)
+	# 		mini = self.min_length
+	# 		maxi = self.max_length
+	# 		if not self.string.isalpha():
+	# 			print(f"{self.string} must be of alphabetical type.\n")
+	# 		elif (length < mini):
+	# 			print(f"Length of {self.string} is too short! Minimum {mini} characters.\n")
+	# 			raise ValidationError
+	# 		elif (length > maxi):
+	# 			print(f"Length of {self.string} is too long! Maximum {maxi} characters.\n")
+	# 			raise ValidationError
+	# 	else:
+	# 		print(f"Type of name was not correct, {type(self.string)} must be of type str.\n")
+	# 		raise ValidationError
+
 #unfinished
 class IntegerField:
 	def __init__(self, min_value = None, max_value = None, blank = False, default = None):
 		self.min_value = min_value
 		self.max_value = max_value
-	
-	def validate(self):		
+		self.blank = blank
+		self.default = default
+
+	def validate(self):
 		#unfinished
 		pass
 
@@ -110,11 +129,16 @@ class User(Model):
 	first_name = CharField(max_length=30)
 	last_name = CharField(max_length=50)
 	email = EmailField()
-	date_joined = DateTimeField(auto_now=True)	
-	is_verified = BooleanField(default=False)
-	age = IntegerField(min_value=5, max_value=120, blank=True)
+	# date_joined = DateTimeField(auto_now=True)
+	# is_verified = BooleanField(default=False)
+
+	# age = IntegerField(min_value=5, max_value=120, blank=True)
 
 user1 = User(first_name='Liam', last_name='Smith', email="liam@example.com")
+
+
+print(user1.first_name)
+
 # user1.validate()
 # print(user1.date_joined)  # prints date and time when the instance was created
 # print(user1.is_verified)  # prints False (default value)
@@ -124,5 +148,5 @@ user1 = User(first_name='Liam', last_name='Smith', email="liam@example.com")
 # print(user1.age)
 # user1.validate()  # raises ValidationError - age is out of range
 
-user2 = User()
-user2.validate()  # raises ValidationError - first three fields are missing and mandatory
+# user2 = User()
+# user2.validate()  # raises ValidationError - first three fields are missing and mandatory
