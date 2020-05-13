@@ -1,3 +1,4 @@
+# https://www.codewars.com/kata/587136ba2eefcb92a9000027/train/python
 class SnakesLadders:
     def __init__(self):
         self.ladders = {
@@ -27,18 +28,27 @@ class SnakesLadders:
         }
         self.playing = 0
         self.player_positions = [0, 0]
+        self.gameover = False
 
     def play(self, die1, die2):
+        if self.gameover:
+            return "Game over!"
         position = self.player_positions[self.playing]
+        num_of_player = self.playing + 1
         position += die1 + die2
+
+        if position == 100:
+            self.gameover = True
+            return f"Player {num_of_player} Wins!"
+        elif position > 100:
+            position = 200 - position
 
         if position in self.ladders.keys():
             position = self.ladders[position]
-
         elif position in self.snakes.keys():
             position = self.snakes[position]
 
-        output = f"Player {1 + self.playing} is on square {position}."
+        output = f"Player {num_of_player} is on square {position}"
         self.player_positions[self.playing] = position
 
         if die1 != die2:
