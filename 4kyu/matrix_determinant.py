@@ -1,6 +1,7 @@
-import numpy as np
-
+# Matrix Determinant
 # https://www.codewars.com/kata/52a382ee44408cea2500074c
+
+import numpy as np
 
 def determinant(matrix):
     array = np.array(matrix)

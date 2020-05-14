@@ -1,11 +1,12 @@
+# Make a spiral
+# https://www.codewars.com/kata/534e01fbbb17187c7e0000c6
 import numpy as np
 import itertools
 
-# https://www.codewars.com/kata/534e01fbbb17187c7e0000c6
 
 def create_spiral(m):
     a = np.zeros(shape=(m,m))
-    
+
     a[[0],0:m] = np.ones(shape = (1,m))
 
     a[1:,[m-1]] = np.ones(shape = (m-1,1))

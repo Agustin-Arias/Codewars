@@ -1,3 +1,4 @@
+# Factorial Tail
 # https://www.codewars.com/kata/55c4eb777e07c13528000021/train/python
 
 '''
@@ -24,8 +25,8 @@ def prime_factorization(n):
         counter += 1
     if counter != 0:
         output.append((2, counter))
-    
-    prime = 3    
+
+    prime = 3
     while number != 1:
         counter = 0
         while number % prime == 0:
@@ -37,6 +38,6 @@ def prime_factorization(n):
     return output
 
 def zeroes(base, number):
-    return min(legendre_formula(number, prime, power) for prime, power 
+    return min(legendre_formula(number, prime, power) for prime, power
     in prime_factorization(base))
 

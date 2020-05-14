@@ -1,11 +1,11 @@
+# Find the unknown digit
+# https://www.codewars.com/kata/546d15cebed2e10334000ed9
 import re
-
-
 def solve_runes(string):
     print(string)
     numbers = re.compile(r'\d')  # we get every instance of a digit
     set1 = set(int(number) for number in numbers.findall(string))
-    set2 = set(list(range(10))) 
+    set2 = set(list(range(10)))
     possible_digits = set2.difference(set1)  # we dont check these digits
 
     check1 = re.compile(r'[^0123456789\?]\?{2,}')  # we check for (operator)??
@@ -38,7 +38,7 @@ def solve_runes(string):
         print()
         output_string = replace.sub(str(digit), string)
         expressions = output_string.split('=')
-        
+
         lefthandside = expressions[0].strip()  # we remove any blank spaces
         righthandside = expressions[1].strip()  # we remove any blank spaces
         if eval(lefthandside) == eval(righthandside):

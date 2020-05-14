@@ -1,5 +1,6 @@
+# Simplifying multilinear polynomials
+# https://www.codewars.com/kata/55f89832ac9a66518f000118/train/python
 import re
-
 
 def take_second(x): return x[1]
 
@@ -23,7 +24,7 @@ def return_string(lis):  # given a list of the form [(expression, number)], retu
             result = result + '+' + str(number) + expression
         else:
             result = result + str(number) + expression
-    return result 
+    return result
 
 
 def simplify(string):
@@ -38,7 +39,7 @@ def simplify(string):
         dic_plus.setdefault(ordered_expression,1)
         if double[0] != '':
             dic_plus[ordered_expression] = int(double[0])
-            
+
     foo = [(expression[0], ''.join(sorted(expression[1]))) for expression in regex_plus.findall(string)]
     bar = [(expression[0], ''.join(sorted(expression[1]))) for expression in regex_minus.findall(string)]
 
@@ -46,7 +47,7 @@ def simplify(string):
     bar.sort(key = take_second)
     print('foo', foo)
     print('bar', bar)
-  
+
     for tupl in foo:
         key = tupl[1]
         if tupl[0] != '':
@@ -65,7 +66,7 @@ def simplify(string):
             dic_minus.setdefault(key,0)
             dic_minus[key] -= 1
     print('dic_minus', dic_minus)
-   
+
     for key, value in dic_minus.items():
         dic_plus.setdefault(key,0)
         dic_plus[key] += value
@@ -74,7 +75,7 @@ def simplify(string):
     for key, value in dic_plus.items():
         if value != 0:
             final_dic[key] = value
-            
+
     final = sorted(list(final_dic.items()),key = take_first)
     final.sort(key = lambda x: len(take_first(x)))
     return return_string(final)

@@ -1,7 +1,6 @@
+# Exponentials as fractions
 # https://www.codewars.com/kata/54f5f22a00ecc4184c000034/train/python
 from math import gcd, factorial
-
-start = time()
 
 def convertTofraction(x):
     num = int(x*10)
@@ -27,5 +26,3 @@ def expand(x, digit):
         k += 1
     print(num, den)
     return [num, den]
-
-print(time()-start)

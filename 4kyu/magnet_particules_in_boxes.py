@@ -1,3 +1,4 @@
+# Magnet particules in boxes
 # https://www.codewars.com/kata/56c04261c3fcf33f2d000534/train/python
 def doubles(maxk, maxn):
     result = 0
