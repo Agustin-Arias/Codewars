@@ -39,7 +39,7 @@ class Connect4():
         which player is playing
         '''
         board = self.board
-        if not self.gameover: print(board)
+        if not self.gameover: print(board, flush = True)
         def check_horizontal(board, num_of_player):
             for row in board:
                 if any([all(row[i: i+4]==np.zeros(4) + num_of_player) for i in range(len(row)-3)]):
@@ -56,17 +56,11 @@ class Connect4():
             check_horizontal(get_main_diag(board[:, ::-1]), num_of_player))  # other diagonals (/)
             )
 
-
+import time
 game = Connect4()
-print(game.play(0))
-print(game.play(1))
-print(game.play(1))
-print(game.play(2))
-print(game.play(2))
-print(game.play(3))
-print(game.play(2))
-print(game.play(3))
-print(game.play(3))
-print(game.play(5))
-print(game.play(3))
-print(game.play(3))
+while not game.gameover:
+    time.sleep(2)
+    import random
+    x = random.randint(0, 6)
+    print(game.play(x), flush = True)
+    print()
