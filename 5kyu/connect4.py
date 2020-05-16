@@ -59,8 +59,8 @@ class Connect4():
 import time
 game = Connect4()
 while not game.gameover:
-    time.sleep(2)
     import random
     x = random.randint(0, 6)
     print(game.play(x), flush = True)
+    time.sleep(2)
     print()
