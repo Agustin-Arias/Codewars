@@ -1,5 +1,6 @@
+import sys
 def set_up_commands():
-    global mov, inc, dec, add, sub, mul, div, jmp, cmp, jne, je, jge, jg, jle, jl, call, ret, msg, end, comment
+    global mov, inc, dec, add, sub, mul, div, jmp, cmp, jne, je, jge, jg, jle, jl, call, ret, msg, end, comment, commands
     def mov(args):
         x, y = args[0].strip(', '), args[1]
         registers[x] = get_value(y, registers)
@@ -68,29 +69,21 @@ def set_up_commands():
     def call(args):
         global line_number, line_number_reference, in_a_function
         lbl = args[0]
-        if not in_a_function: line_number_reference, in_a_function = line_number, True
+        if not in_a_function:
+            line_number_reference, in_a_function = line_number, True
         line_number = labels[lbl]
     def ret(args):
-        global line_number, line_number_reference, in_a_function
+        global line_number, in_a_function
         line_number = line_number_reference
         in_a_function = False
     def msg(args):
         global output
-        output = make_msg(message)
+        output = make_msg(args)
     def end(args):
         global line_number, program_ended_successfully
         program_ended_successfully = True
         line_number = total_lines
     def comment(args): pass
-def set_up_environment(program):
-    global processed_program, total_lines, registers, labels, commands, line_number, in_a_function
-    line_number = 0
-    in_a_function = False
-    processed_program = remove_empty_spaces(remove_empty_strings(program.split('\n')))
-    total_lines = len(processed_program)
-    registers = {}
-    labels = set_labels(processed_program)
-    find_message(program)
     commands = {
         'mov' : mov,
         'inc' : inc,
@@ -111,21 +104,14 @@ def set_up_environment(program):
         'ret' : ret,
         'msg' : msg,
         'end' : end,
-        ';' : comment
+        ';' : comment,
+        '' : comment
     }
-def find_message(program):
-    global message
-    for line in program.split('\n'):
-        if 'msg' in line:
-            index = line.index('msg')
-            message = line[3:].strip(' ')
-def process_program(program):
-    global processed_program
-    processed_program = remove_empty_spaces(remove_empty_strings(program.split('\n')))
-def set_labels(processed_program):
+def set_labels(program):
+    global labels
     labels = {}
-    for index, line in enumerate(processed_program):
-        if line[-1] == ':':
+    for index, line in enumerate(program.split('\n')):
+        if line != '' and line[-1] == ':':
             labels[line[:-1]] = index
     return labels
 def get_value(x, registers):
@@ -134,10 +120,9 @@ def get_value(x, registers):
     return int(x)
 def make_msg(string):
     import re
-    pattern = r"(', '|.|'.*?')"
+    pattern = r"(', '|. |'.*?'|.)"
     remove_comment = string[:string.index(';')].strip(' ') if ';' in string else string.strip(' ')
-    message = re.findall(f"{pattern},", remove_comment) + re.findall(f", {pattern}$", remove_comment)
-    print(message)
+    message = re.findall(f"{pattern},", remove_comment) + re.findall(f",? {pattern}$", remove_comment)
     output = ''
     for word in message:
         if word == ';':
@@ -146,49 +131,76 @@ def make_msg(string):
             output += word.strip("'")
         else:
             output += str(get_value(word, registers))
-
     return output
-def remove_empty_strings(string_list): return list(filter(lambda x: x.strip('') != '', string_list))
-def remove_empty_spaces(processed_program): return [line.strip(' ') for line in processed_program]
-def interpret_code(processed_program):
-    global line_number, program_ended_successfully
-    program_ended_successfully = False
-    while line_number < total_lines:
-        line = remove_empty_strings(processed_program[line_number].split(' '))
-        command, args = line[0], line[1:]
-        # print(line)
-        do_command  = commands[command]
-        do_command(args)
-        # print(registers)
-        line_number += 1
-    if program_ended_successfully:
-        return output
-    return -1
-def assembler_interpreter(program):
+def assembler_interpreter(program, timer = 1):
     set_up_commands()
-    set_up_environment(program)
-    process_program(program)
-    print(message)
-    set_labels(processed_program)
-    return interpret_code(processed_program)
-
-
+    set_labels(program)
+    global registers, total_lines, in_a_function, program_ended_successfully, line_number
+    registers = {}
+    total_lines = len(program.split('\n'))
+    in_a_function = False
+    program_ended_successfully = False
+    gui = program.split('\n')
+    gui = [line + ' '*10 for line in gui]
+    gui.append(f"registers: {registers}")
+    line_number = 1
+    while line_number < total_lines:
+        line = program.split('\n')[line_number]
+        gui[line_number] += '*'
+        gui[-1] = f"registers: {registers}"
+        print('\n'*5)  # we center the program output (1)
+        print('\n'.join(gui))
+        gui[line_number] = gui[line_number].strip('*')
+        if line != '':
+            command, *args = line.strip(' ').strip('\t').split(' ')
+            do_command  = commands[command]
+            if command != 'msg':
+                args = list(filter(lambda x : x!='', args))
+            else:
+                args = line
+            do_command(args)
+        if not program_ended_successfully and line_number <= total_lines-1: print('\n'*5)  # and dont print if the program ended
+        line_number += 1
+        import time
+        time.sleep(timer)
+        sys.stdout.flush()
+    if program_ended_successfully:
+        print('\n',output, '\n'*5)
+        return output
+    return "Error. \nProgram ended with exit code -1"
 
 program = '''
-mov c, 11   ; instruction mov c, 11
-mov n, 6   ; instruction mov n, 6
-call func
-msg 'Random result: ', i
+mov   a, 8            ; value
+mov   b, 0            ; next
+mov   c, 0            ; counter
+mov   d, 0            ; first
+mov   e, 1            ; second
+call  proc_fib
+call  print
 end
 
-func:
-    cmp c, n
-    jl exit
-    mov i, c
-    mul i, n
+proc_fib:
+    cmp   c, 2
+    jl    func_0
+    mov   b, d
+    add   b, e
+    mov   d, e
+    mov   e, b
+    inc   c
+    cmp   c, a
+    jle   proc_fib
     ret
-; Do nothing
-exit:
-    msg 'Do nothing'
+
+func_0:
+    mov   b, c
+    inc   c
+    jmp   proc_fib
+
+print:
+    msg   'Term ', a, ' of Fibonacci series is: ', b        ; output text
+    ret
 '''
-print(assembler_interpreter(program))
+if len(sys.argv) == 1:
+    assembler_interpreter(program)
+else:
+    assembler_interpreter(program, float(sys.argv[1]))
