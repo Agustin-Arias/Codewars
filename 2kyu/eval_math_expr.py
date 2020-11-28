@@ -7,12 +7,11 @@ On tree representation of mathematical operations
 '''
 
 OPERANDS = {
-    '+': lambda a, b: a + b,
-    '-': lambda a, b: a - b,
-    '*': lambda a, b: a*b,
-    '/': lambda a, b: a/b,
+    '+': lambda a, b: float(a) + float(b),
+    '-': lambda a, b: 0 - float(b) if (a == '') else float(a) - float(b),
+    '*': lambda a, b: float(a) * float(b),
+    '/': lambda a, b: float(a) / float(b),
 }
-
 
 class Node:
     def __init__(self, value = None, left = None, right = None):
@@ -26,26 +25,35 @@ class Node:
         self.value = value
 
     def eval(self):
-        print(f"self.value: {self.value}")
-        if self.left != None:
-            print(f"left: {self.left.value}")
-            print(f"right: {self.right.value}")
-        if self.right == None and self.left == None:
-            result = self.value
-        elif self.right.isDigit() and self.left.isDigit():
-            result = OPERANDS[self.value](int(self.left.value), int(self.right.value))
+
+
+        if self.is_a_number():
+            return self.value
+
+        elif self.right.is_a_number() and self.left.is_a_number():
+            operation = OPERANDS[self.value]
+            left_number, right_number = self.left.value, self.right.value
+            return operation(left_number, right_number)
+
         else:
             self.left = Node(value = str(self.left.eval()))
             self.right = Node(value = str(self.right.eval()))
-            result = self.eval()
+            return self.eval()
 
-        return result
 
-    def isDigit(self):
-        return self.value.isdigit()
+    def is_a_number(self):
+        # the node is a number iff it is
+        # a terminal node
+        return self.right == None and self.left == None
+
+
 
 class Expression:
     def __init__(self, expression):
+        # expression is an arithmetic
+        # operation with parentheses,
+        # numbers and operators such as
+        # +, -, * and /
         self.expression = expression
 
     def getDigit(self, i):
@@ -57,55 +65,174 @@ class Expression:
         i-=1
         return node, i
 
-    def getPar(self, i):
-        nodeVal = ""
-        parCounter = 1
-        expression = self.expression
-        i+=1
+def getDigit(expression, i):
+    # gets the digit starting from i
+    number = ""
+    indx = i
+    while indx < len(expression) and expression[indx] in "0123456789.":
+        number += expression[indx]
+        indx+=1
+    return number, indx
 
-        while True:
-            if expression[i] == '(':
-                parCounter += 1
-            elif expression[i] == ')':
-                parCounter -= 1
-            if parCounter == 0: break
-            nodeVal += expression[i]
+def getPar(expression, i):
+    # gets the digit starting from i
+    insidePar = ""
+    indx = i+1
+    parCounter = 1
+    while indx < len(expression):
+        char = expression[indx]
+
+        if char == '(': parCounter+=1
+        elif char == ')': parCounter-=1
+
+        if parCounter == 0: break
+
+        insidePar += expression[indx]
+
+        indx+=1
+    return insidePar, indx+1
+
+def convert_minus_to_plus(expression):
+    out = ""
+    i = 0
+    while i < len(expression):
+        char = expression[i]
+        if char == '-':
+            print(f"out: {out}")
+            j = i+1
+            number = ""
+            while True:
+                print(f"expression[j:]: {expression[j:]}")
+                if expression[j].isdigit():
+                    number, j = getDigit(expression, j)
+                    number = f"(-1)*({number})"
+                    break
+                elif expression[j] == '(':
+                    number, j = getPar(expression, j)
+                    number = f"(-1)*({number})"
+                    break
+                elif expression[j] == '-':
+                    number, j = getDigit(expression, j+1)
+                    break
+                else:
+                    j+=1
+            if number != "":
+                out += f"+ ({number})"
+            else:
+                out += f"+ (-1)*"
+            number = ""
+            i = j
+        else:
+            out += char
             i+=1
+    return out
 
-        exp = Expression(nodeVal)
-        i -= 1
-        return exp.parse(), i
-
-    def parse(self):
-        tree = Node()
-        expression = self.expression
-
-        i = 0
-        while i < len(expression):
-            if expression[i].isdigit():
-                left, i = self.getDigit(i)
-            elif expression[i] in "+-*/":
-                tree.value = expression[i]
-                tree.left = left
-                tree.right = Node(value = expression[i+1:].strip())
-                i = len(expression)
-            elif expression[i] == '(':
-                left, i = self.getPar(i)
+def parse(expression, prin = False):
+    if expression == "":
+        return None
+    elif expression == "-1":
+        return Node("-1")
+    tree = Node()
+    i = 0
+    left = right = value =''
+    removePar = False
+    while i < len(expression):
+        char = expression[i]
+        if prin: print(f"\nExpression left: {expression[i:]}")
+        if char.isdigit():
+            if prin: print("Found digit")
+            left, i = getDigit(expression, i)
+        elif char == '(':
+            if prin: print(f"Found par")
+            left, i = getPar(expression, i)
+            if i == len(expression):
+                removePar = True
+        elif char == '+':
+            if prin: print(f"Found +")
+            value = char
+            right = expression[i+1:]
+            if left == '':
+                left = expression[:i]
+            i = len(expression)
+        elif char == '*':
+            if prin: print(f"Found *")
+            value = char
+            right = expression[i+1:]
+            if left == '':
+                left = expression[:i]
+            i = len(expression)
+        else:
             i+=1
-        return tree
+        if prin:
+            print(f"Now: left={left}")
+            print(f"Now: value={value}")
+            print(f"Now: right={right}")
+            print(f"Now: expression[i:]={expression[i:]}")
+
+    if prin: print(f"left: {left}")
+    if prin: print(f"value: {value}")
+    if prin: print(f"right: {right}")
+
+    if removePar:
+        tree = parse(left, True)
+    elif left == '' and right != '':
+        if prin: print(f"Only right found")
+        tree.value = right.strip()
+    elif left != '' and right == '':
+        if prin: print(f"Only left found")
+        tree.value = left.strip()
+    else:
+        if prin: print(f"Parsing again...")
+        tree.value = value
+        if prin:
+            tree.left = parse(left, True)
+            tree.right = parse(right, True)
+        else:
+            tree.left = parse(left)
+            tree.right = parse(right)
+    return tree
+
+tests = [
+    ["1 + 1", 2],
+    ["8/16", 0.5],
+    ["3 -(-1)", 4],
+    ["2 + -2", 0],
+    ["10- 2- -5", 13],
+    ["(((10)))", 10],
+    ["3 * 5", 15],
+    ["-7 * -(6 / 3)", 14]
+]
+
+i = 2
+expression = tests[i][0]
+print(expression)
+expression = convert_minus_to_plus(expression)
+print(expression)
 
 
+# tree = parse(expression, True)
+# print("\n"*5)
+# print(expression)
+# print(tree.value)
+# print(tree.left.value)
+# print(tree.right.value)
+# print(tree.right.left.value)
+# print(tree.right.right.value)
+# print(tree.right.left.left.value)
+# print(tree.right.left.right.value)
+# print(tree.eval())
 
-expression = Expression(" (1231+231) + 243")
+# index = 0
+# for expression, result in tests:
+#     print("Testing   " + expression)
+#     print(f"index: {index}")
+#     tree = parse(expression)
+#     if tree.eval() == result:
+#         print("....All ok")
+#     else:
+#         print("...Error")
+#         print(f"\tExpected: {result}")
+#         print(f"\tGot: {tree.eval()}")
+#     index += 1
+# print(tree.eval()- eval(expression))
 
-node = expression.parse()
-
-
-print(node.eval())
-
-# print(f"n1: {node}")
-# print(f"n1.v: {node.value}")
-# print(f"n2.v: {node.left.value}")
-# print(f"n2.l.v: {node.left.left.value}")
-# print(f"n2.r.v: {node.left.right.value}")
-# print(f"n3.v: {node.right.value}")
