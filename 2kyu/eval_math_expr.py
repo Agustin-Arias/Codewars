@@ -1,16 +1,18 @@
-'''
-Problem:
-    https://www.codewars.com/kata/52a78825cdfc2cfc87000005/train/python
-
-On tree representation of mathematical operations
-    http://www.math.wpi.edu/IQP/BVCalcHist/calc5.html#_Toc407004380
-'''
+import re
+from operator import itemgetter
 
 OPERANDS = {
     '+': lambda a, b: float(a) + float(b),
     '-': lambda a, b: 0 - float(b) if (a == '') else float(a) - float(b),
     '*': lambda a, b: float(a) * float(b),
     '/': lambda a, b: float(a) / float(b),
+}
+
+PATTERNS = {
+    "any_number": r"(-?\d+)",
+    "positive_number": r"(\d+)",
+    "operand": r"(\+|\-|\*|\/)",
+    "plus_or_minus": r"(\+|\-)",
 }
 
 class Node:
@@ -21,177 +23,159 @@ class Node:
             --left and right are instances of Node
         '''
         self.left = left
-        self.right = right
         self.value = value
+        self.right = right
 
-    def eval(self):
+    def __str__(self, level = 0):
+        output = "\t"*level + self.value + "\n"
+        for child in [self.left, self.right]:
+            if child != None:
+                output += child.__str__(level + 1)
 
+        return output
 
-        if self.is_a_number():
-            return self.value
+# class Tree:
+#     def __init__(self, head = None):
+#         self.head = head
 
-        elif self.right.is_a_number() and self.left.is_a_number():
-            operation = OPERANDS[self.value]
-            left_number, right_number = self.left.value, self.right.value
-            return operation(left_number, right_number)
-
-        else:
-            self.left = Node(value = str(self.left.eval()))
-            self.right = Node(value = str(self.right.eval()))
-            return self.eval()
-
-
-    def is_a_number(self):
-        # the node is a number iff it is
-        # a terminal node
-        return self.right == None and self.left == None
-
-
+#     def __str__(self):
+#         return self.head.__str__()
 
 class Expression:
-    def __init__(self, expression):
-        # expression is an arithmetic
-        # operation with parentheses,
-        # numbers and operators such as
-        # +, -, * and /
-        self.expression = expression
 
-    def getDigit(self, i):
-        nodeVal = ""
-        while self.expression[i].isdigit():
-            nodeVal += self.expression[i]
-            i+=1
-        node = Node(value = nodeVal)
-        i-=1
-        return node, i
+    def __init__(self, string = ""):
+        self.string = self.trasform_negatives(self.remove_double_operands(string.replace(' ', '')))
 
-def getDigit(expression, i):
-    # gets the digit starting from i
-    number = ""
-    indx = i
-    while indx < len(expression) and expression[indx] in "0123456789.":
-        number += expression[indx]
-        indx+=1
-    return number, indx
 
-def getPar(expression, i):
-    # gets the digit starting from i
-    insidePar = ""
-    indx = i+1
-    parCounter = 1
-    while indx < len(expression):
-        char = expression[indx]
+    def get_binary_expression(self):
+        any_number, operand = PATTERNS['any_number'], PATTERNS['operand']
+        pattern = rf"^{any_number}{operand}{any_number}$"
+        return re.search(pattern, self.string)
 
-        if char == '(': parCounter+=1
-        elif char == ')': parCounter-=1
+    def remove_double_operands(self, string): 
+        plus_or_minus = PATTERNS['plus_or_minus']
+        pattern = rf"{plus_or_minus}{plus_or_minus}"
+        get_sign = lambda m: '+' if float(f"{m.group(1)}1") * float(f"{m.group(2)}1") > 0 else '-'
+        return re.sub(pattern, get_sign, string)
 
-        if parCounter == 0: break
+    def is_wrapped_in_parenthesis(self):
+        index = 0
+        parenthesis_count = 0
+        parenthesis_add = {
+            '(': 1,
+            ')':-1
+        }
 
-        insidePar += expression[indx]
+        index = 0
+        if self.string[index] in '()':
+            char = self.string[index]
+            parenthesis_count += parenthesis_add[char]
+            index+=1
+            while parenthesis_count != 0 and index < len(self.string):
+                char = self.string[index]
+                if char in '()':
+                    parenthesis_count+=parenthesis_add[char]
+                index += 1
 
-        indx+=1
-    return insidePar, indx+1
+        return index == len(self.string) and parenthesis_count == 0
 
-def convert_minus_to_plus(expression):
-    out = ""
-    i = 0
-    while i < len(expression):
-        char = expression[i]
-        if char == '-':
-            print(f"out: {out}")
-            j = i+1
-            number = ""
-            while True:
-                print(f"expression[j:]: {expression[j:]}")
-                if expression[j].isdigit():
-                    number, j = getDigit(expression, j)
-                    number = f"(-1)*({number})"
-                    break
-                elif expression[j] == '(':
-                    number, j = getPar(expression, j)
-                    number = f"(-1)*({number})"
-                    break
-                elif expression[j] == '-':
-                    number, j = getDigit(expression, j+1)
-                    break
-                else:
-                    j+=1
-            if number != "":
-                out += f"+ ({number})"
-            else:
-                out += f"+ (-1)*"
-            number = ""
-            i = j
+    def remove_parenthesis(self):
+        self.string = self.string[1:-1]
+
+    def left_has_no_parenthesis(self):
+        return self.string[0] != '('
+
+    def separate_left(self):
+        any_number, operand = PATTERNS['any_number'], PATTERNS['operand']
+        pattern = rf"^{any_number}{operand}(.*)$"
+        return re.search(pattern, self.string).groups()
+
+    def is_number(self):
+        any_number = PATTERNS['any_number']
+        pattern = f"^{any_number}$"
+        if re.match(pattern, self.string):
+            return True
+        return False
+
+    def remove_double_negative(self, string):
+        # simplify sections of the form {}
+        positive_number = PATTERNS['positive_number']
+        unit = rf"\(?\-{positive_number}\)?"
+        pattern = rf"{unit}\*{unit}"
+        repl = r"\1*\2"
+        return re.sub(pattern, repl, string)
+
+
+    def trasform_negatives(self, string):
+        # remove negatives preceeding parenthesis
+        pattern = r"\-\("
+        repl = r"+(-1)*("
+        output = re.sub(pattern, repl, string)
+        output = self.remove_double_negative(output)
+
+        # remove negatives preceeding numbers
+        pattern = r"\-([2-9]|\d{2,})"
+        repl = r"+(\1)*(-1)"
+        output = re.sub(pattern, repl, output)
+
+        output = self.remove_double_negative(output)
+        
+        return output
+
+    def to_tree(self):
+
+        if self.is_wrapped_in_parenthesis():
+            self.remove_parenthesis()
+            self.to_tree()
+
+        if self.is_number():
+            return Node(value = self.string)
+
+        regex_search = self.get_binary_expression()
+        if regex_search:
+            left, operand, right = regex_search.groups()
+            head_node = Node(operand, Node(value = left), Node(value = right))
+            return head_node
+
+        if self.left_has_no_parenthesis():
+            left, operand, right = self.separate_left()
+            head_node = Node(operand, left = Node(left), right = Expression(right).to_tree())
+
         else:
-            out += char
-            i+=1
-    return out
+            left = ''
 
-def parse(expression, prin = False):
-    if expression == "":
-        return None
-    elif expression == "-1":
-        return Node("-1")
-    tree = Node()
-    i = 0
-    left = right = value =''
-    removePar = False
-    while i < len(expression):
-        char = expression[i]
-        if prin: print(f"\nExpression left: {expression[i:]}")
-        if char.isdigit():
-            if prin: print("Found digit")
-            left, i = getDigit(expression, i)
-        elif char == '(':
-            if prin: print(f"Found par")
-            left, i = getPar(expression, i)
-            if i == len(expression):
-                removePar = True
-        elif char == '+':
-            if prin: print(f"Found +")
-            value = char
-            right = expression[i+1:]
-            if left == '':
-                left = expression[:i]
-            i = len(expression)
-        elif char == '*':
-            if prin: print(f"Found *")
-            value = char
-            right = expression[i+1:]
-            if left == '':
-                left = expression[:i]
-            i = len(expression)
-        else:
-            i+=1
-        if prin:
-            print(f"Now: left={left}")
-            print(f"Now: value={value}")
-            print(f"Now: right={right}")
-            print(f"Now: expression[i:]={expression[i:]}")
+            index = 1
+            parenthesis_count = 1
 
-    if prin: print(f"left: {left}")
-    if prin: print(f"value: {value}")
-    if prin: print(f"right: {right}")
+            parenthesis_add = {
+                '(': 1,
+                ')':-1
+            }
 
-    if removePar:
-        tree = parse(left, True)
-    elif left == '' and right != '':
-        if prin: print(f"Only right found")
-        tree.value = right.strip()
-    elif left != '' and right == '':
-        if prin: print(f"Only left found")
-        tree.value = left.strip()
-    else:
-        if prin: print(f"Parsing again...")
-        tree.value = value
-        if prin:
-            tree.left = parse(left, True)
-            tree.right = parse(right, True)
-        else:
-            tree.left = parse(left)
-            tree.right = parse(right)
-    return tree
+            while index < len(self.string):
+                char = self.string[index]
+                if char in '()':
+                    parenthesis_count+=parenthesis_add[char]
+                if parenthesis_count == 0:
+                    break
+                left += char
+                index += 1
 
+            index += 1
+            operand = self.string[index]
+            right = self.string[index+1:]
+
+            head_node = Node(operand, left = Expression(left).to_tree(), right = Expression(right).to_tree())
+
+
+        return head_node
+
+
+'''
+-(-\d+) => +\d
++- => 
+pattern = \-\(\-\d+\)
+'''
 tests = [
     ["1 + 1", 2],
     ["8/16", 0.5],
@@ -203,36 +187,25 @@ tests = [
     ["-7 * -(6 / 3)", 14]
 ]
 
-i = 2
-expression = tests[i][0]
-print(expression)
-expression = convert_minus_to_plus(expression)
-print(expression)
+'''
+    Number: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | 9
 
+    Operand: '+' | '-' | '/' | '*'
 
-# tree = parse(expression, True)
-# print("\n"*5)
-# print(expression)
-# print(tree.value)
-# print(tree.left.value)
-# print(tree.right.value)
-# print(tree.right.left.value)
-# print(tree.right.right.value)
-# print(tree.right.left.left.value)
-# print(tree.right.left.right.value)
-# print(tree.eval())
+    Parenthesis: '(' | ')'
 
-# index = 0
-# for expression, result in tests:
-#     print("Testing   " + expression)
-#     print(f"index: {index}")
-#     tree = parse(expression)
-#     if tree.eval() == result:
-#         print("....All ok")
-#     else:
-#         print("...Error")
-#         print(f"\tExpected: {result}")
-#         print(f"\tGot: {tree.eval()}")
-#     index += 1
-# print(tree.eval()- eval(expression))
+    ValidCharacter: Number | Operand | Parenthesis
 
+    Expression: ValidCharacter*
+'''
+i = 4
+string, solution = tests[i]
+
+expression = Expression(string)
+
+print(f"expression: {expression.string}")
+
+print("expression to tree: ")
+
+tree = expression.to_tree()
+print(tree)
